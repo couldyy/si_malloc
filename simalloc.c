@@ -53,7 +53,7 @@ void si_free(void* ptr)
     int user_data_size = this_chunk->size;
 
 
-    // TODO: Fix issue when we have already freed some ptr
+    // FIXME: Fix issue when we have already freed some ptr
     // and then some other function using sbrk() moved head after current address making possible no double free detection
     // Example:
     //
