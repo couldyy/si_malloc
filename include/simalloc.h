@@ -29,8 +29,8 @@ TODO:
 #ifndef _C_MALLOC_
 #define _C_MALLOC_
 #include <stddef.h>
-#include "simalloc_utils.h"
-#include "simalloc_internal.h"
+#include "../simalloc_utils.h"
+#include "../simalloc_internal.h"
 
 
 void* si_malloc(size_t size);

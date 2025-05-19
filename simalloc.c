@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include <signal.h>
 #include "simalloc_internal.h" 
-#include "simalloc.h" 
+#include "include/simalloc.h" 
 #include "simalloc_utils.h" 
 
 

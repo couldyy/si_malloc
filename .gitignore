@@ -1,5 +1,2 @@
-temp
-temp.c
-test_mmap
-test_mmap.c
-build/
+tests/build/
+garbage/
