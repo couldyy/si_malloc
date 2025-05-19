@@ -10,25 +10,25 @@ No thread safety, no memory protection whatsoever.
 For now it is linux-only malloc (and probably will stay like that forever).\
 So in order to compile a static version of library you have to
 ```
-$ https://github.com/couldyy/si_malloc.git
-$ cd si_malloc
-$ make
-$ sudo make install
+> git clone https://github.com/couldyy/si_malloc.git
+> cd si_malloc
+> make
+> sudo make install
 ```
 If you want to compile a shared version for dynamic linking, do
 ```
-$ SIMALLOC_LIBTYPE=SHARED make
-$ sudo SIMALLOC_LIBTYPE=SHARED make install
+> SIMALLOC_LIBTYPE=SHARED make
+> sudo SIMALLOC_LIBTYPE=SHARED make install
 ```
 You can also configure installation path by specifying `DESTDIR ` (default is `usr/local`) 
 
 For uninstallation of static version of library run
 ```
-$ sudo make uninstall
+> sudo make uninstall
 ```
 And for the dynamic version
 ```
-$ sudo SIMALLOC_LIBTYPE=SHARED make uinstall
+> sudo SIMALLOC_LIBTYPE=SHARED make uinstall
 ```
 
 For cleaning run `make clean`
