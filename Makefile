@@ -24,16 +24,20 @@ else
 	SIMALLOC_BUILD_FLAGS = -Wall -Wextra -O3
 endif
 
-all: simalloc
+
+all: simalloc test
 
 #test: simalloc.c simalloc_utils.c simalloc_utils.h simalloc_internal.h main.c simalloc.h
-test:
+test: simalloc
 	rm -rf tests/build/
 	mkdir tests/build
+	$(CC) $(SIMALLOC_BUILD_FLAGS) -o tests/build/double_free_head_after tests/double_free_head_after.c -I./include/ -L./ -lsimalloc
+	$(CC) $(SIMALLOC_BUILD_FLAGS) -o tests/build/alloc_var tests/alloc_var.c -I./include/ -L./ -lsimalloc
+	$(CC) $(SIMALLOC_BUILD_FLAGS) -o tests/build/alloc_array tests/alloc_array.c -I./include/ -L./ -lsimalloc
 	#TODO create different tests
 	#$(CC) -Wall -Wextra -g -O0 -o build/main main.c simalloc.c simalloc_utils.c
 
-simalloc: include/simalloc.h simalloc.c simalloc_internal.h simalloc_utils.h simalloc_utils.c
+simalloc: include/simalloc.h simalloc.c simalloc_internal.h simalloc_utils.c
 #	rm -rf ./build/
 #	mkdir build
 	

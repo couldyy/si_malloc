@@ -29,15 +29,18 @@ TODO:
 #ifndef _C_MALLOC_
 #define _C_MALLOC_
 #include <stddef.h>
+#include <unistd.h>
 #include "../simalloc_utils.h"
 #include "../simalloc_internal.h"
 
 
 void* si_malloc(size_t size);
 
-void* si_calloc(size_t size, int n);
-
 void si_free(void* ptr);
+
+void* si_calloc(int n, size_t size);
+
+void* si_realloc(void* ptr, size_t size);
 
 
 

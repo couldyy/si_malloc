@@ -1,5 +1,4 @@
 #include "simalloc_internal.h"
-#include <unistd.h>
 
 
 Arena* init_ci_malloc()
@@ -7,6 +6,8 @@ Arena* init_ci_malloc()
 #ifdef UNKNOWN_ARCH
     fprintf(stderr, "Unknown architecture, memory alignment is set to %d bytes\n", ALIGNMENT_SIZE);
 #endif
+    si_srand(time(NULL));
+    init_canary();
     Arena* arena_metadata_ptr = (Arena*)sbrk(sizeof(Arena));
     *arena_metadata_ptr = (Arena){NULL, NULL};
     return arena_metadata_ptr;
@@ -95,4 +96,39 @@ void __d_print_free_chunks()
         printf("chunk: %p, %d\n", temp, (temp->next_chunk != NULL) ? (temp < temp->next_chunk) : 0);
         temp = temp->next_chunk;
     }
+}
+
+
+void si_srand(unsigned long seed)
+{
+    si_rand_state = seed;
+}
+
+unsigned long si_rand()
+{
+    si_rand_state = (si_rand_state * 1103515245 + 12345) % SI_RAND_MAX;
+    return si_rand_state;
+}
+
+void init_canary() {
+    canary_secret = ((uint64_t)si_rand() << 32) | si_rand();
+}
+
+uint64_t generate_canary(struct MemoryChunk* chunk_ptr, size_t chunk_size)
+{
+    intptr_t addr = (uintptr_t)chunk_ptr;
+
+    // Mix address, size, and the global secret into a 64-bit canary
+    uint64_t canary = addr ^ (chunk_size << 32 | chunk_size >> 32) ^ canary_secret;
+#ifdef DEBUG_CANARY
+    printf("generating chunk, addr: %p, chunk_size: %zu, canary:%p\n", addr, chunk_size, canary);
+#endif
+    canary ^= (canary >> 33) ^ (canary << 17);  // basic bit-mixing 
+    return (canary_secret ^ (uintptr_t)chunk_ptr);
+}
+
+// XOR canaries, 0 returned when canaries are equal
+inline int64_t compare_canaries(uint64_t canary_a, uint64_t canary_b)
+{
+    return (canary_a ^ canary_b);
 }

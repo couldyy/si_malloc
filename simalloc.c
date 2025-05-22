@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <sys/mman.h>
-#include <unistd.h>
+//#include <unistd.h>
 #include <errno.h>
 #include <string.h>
 #include <assert.h>
@@ -38,7 +38,7 @@ void* si_malloc(size_t n)
     //void* ptr = sbrk(0);
     struct MemoryChunk* prev_chunk = NULL;
     struct MemoryChunk* next_chunk = NULL;
-    struct MemoryChunk new_chunk = {total_requested_size - metadata_size, next_chunk, prev_chunk};
+    struct MemoryChunk new_chunk = {total_requested_size - metadata_size, next_chunk, prev_chunk, generate_canary(ptr, total_requested_size - metadata_size)};
     
     *(struct MemoryChunk*)ptr = new_chunk;
     char* ret_ptr = (char*)ptr + metadata_size;
@@ -52,16 +52,27 @@ void si_free(void* ptr)
     struct MemoryChunk* this_chunk = GET_METADATA_PTR(ptr);
     int user_data_size = this_chunk->size;
 
+    // compare canary, stored in chunk with, generated canary for this chunk
+    // if chunk is corrupted, canary store in it should be different from generated
+    // TODO: take into account other data when generating canary, for example - size
+#ifdef DEBUG_FREE 
+    printf("chunk canary -> %p\tgenerated canary -> %p, compare -> %lld\n", this_chunk->canary, generate_canary(this_chunk, user_data_size), compare_canaries(this_chunk->canary, generate_canary(this_chunk, user_data_size)));
+#endif
+    if(compare_canaries(this_chunk->canary, generate_canary(this_chunk, user_data_size))) {
+        fprintf(stderr, "si_free(): Canary mismatch - memory corruption/double free detected\n");
+        kill(getpid(), SIGABRT);
+    }
 
-    // FIXME: Fix issue when we have already freed some ptr
-    // and then some other function using sbrk() moved head after current address making possible no double free detection
-    // Example:
-    //
-    //      int *var1 = si_malloc(sizeof(int));     <-- alloc memory using sbrk()
-    //      *var1 = 10;
-    //      si_free(var1);                          <-- free memory using sbrk(-size), now var1 > sbrk(0)
-    //      sbrk(sizeof(int) * 20);                 <-- simulation of some function allocating memory using sbrk(), now var1 < sbrk() but we didnt allocate any memory
-    //      si_free(var1);                          <-- free memory of other function, NO DOUBLE FREE DETECTION
+
+    // DONE // FIXME: #1 Fix issue when we have already freed some ptr
+    // DONE // and then some other function using sbrk() moved head after current address making possible no double free detection
+    // DONE // Example:
+    // DONE //
+    // DONE //      int *var1 = si_malloc(sizeof(int));     <-- alloc memory using sbrk()
+    // DONE //      *var1 = 10;
+    // DONE //      si_free(var1);                          <-- free memory using sbrk(-size), now var1 > sbrk(0)
+    // DONE //      sbrk(sizeof(int) * 20);                 <-- simulation of some function allocating memory using sbrk(), now var1 < sbrk() but we didnt allocate any memory
+    // DONE //      si_free(var1);                          <-- free memory of other function, NO DOUBLE FREE DETECTION
     //
     // check if memory was freed before using sbrk(-size)
     if(sbrk(0) < (ptr + this_chunk->size)){
@@ -71,10 +82,10 @@ void si_free(void* ptr)
     // return memory to system if it is possible
     // (if sbrk() points to the end of a chunk)
     else if(sbrk(0) == (ptr + this_chunk->size)){
-        memset(ptr, 0, this_chunk->size);     // zero out memory
+        memset(this_chunk, 0, this_chunk->size + sizeof(struct MemoryChunk));     // zero out memory
         sbrk(-(this_chunk->size + sizeof(struct MemoryChunk)));
 #ifdef DEBUG_FREE
-        //printf("returned %d bytes to system\n", user_data_size);
+        printf("returned %d bytes to system\n", user_data_size);
 #endif
         this_chunk = NULL;
         return;
@@ -93,7 +104,7 @@ void si_free(void* ptr)
         temp_free_chunk = temp_free_chunk->next_chunk;
     }
     
-    memset(ptr, 0, user_data_size);     // zero out memory
+    memset(this_chunk, 0, this_chunk->size + sizeof(struct MemoryChunk));     // zero out memory
 
     //temp_free_chunk = memory_arena->free_chunks;
     
@@ -104,9 +115,14 @@ void si_free(void* ptr)
    // assert(0 && "TODO cFree() unimplemented");
 }
 
-void* si_calloc(size_t size, int n)
+void* si_calloc(int n, size_t size)
 {
     assert(0 && "TODO si_calloc() unimplemented");
+}
+
+void* si_realloc(void* ptr, size_t size)
+{
+    assert(0 && "TODO si_realloc() unimplemented");
 }
 
 
